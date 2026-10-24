@@ -5,7 +5,7 @@ interface CacheEntry<T> {
   timestamp: number;
 }
 
-// In-memory cache that works on both local dev and serverless (Vercel)
+// Per-process cache, cleared on restart or redeploy; data is fetched again on demand.
 const memoryCache = new Map<string, CacheEntry<unknown>>();
 
 export function getCached<T>(key: string): T | null {

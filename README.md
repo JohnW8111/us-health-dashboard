@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# US Health Dashboard
 
-## Getting Started
+United States health indicators organized by the Triple Aim framework:
+Population Health, Experience of Care, and Per Capita Cost. The Next.js app
+fetches public World Bank, WHO GHO, and CMS data through `/api/indicators`.
 
-First, run the development server:
+## Local development
 
-```bash
+Use Node.js 24 (the deployment version is defined in `.node-version`).
+
+```sh
+npm ci --include=dev
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open <http://localhost:3000>.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Production
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```sh
+npm ci --include=dev
+npm run build
+PORT=10000 npm start
+```
 
-## Learn More
+The production server binds to `0.0.0.0` and uses the `PORT` environment
+variable. Without `PORT`, Next.js defaults to port 3000. The build includes
+development dependencies because TypeScript and Tailwind are build tools.
+The build downloads Geist fonts from Google through `next/font`.
 
-To learn more about Next.js, take a look at the following resources:
+## Render deployment
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+[`render.yaml`](render.yaml) defines a Node web service that builds from
+`main` and deploys automatically on commits. Deploy the server rather than a
+static export: the dashboard needs the `/api/indicators` route at runtime.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Open [the Render Blueprint setup](https://dashboard.render.com/select-repo?type=blueprint)
+   and connect `JohnW8111/us-health-dashboard` after the migration changes
+   have been merged into `main`.
+2. Review the service settings from `render.yaml` and create the Blueprint.
+   It selects Render's free instance type. Free services can sleep when idle
+   and take time to wake; select a paid instance in Render if always-on
+   availability is required.
+3. Wait for a successful deploy, then check the assigned `onrender.com` URL.
+   Confirm `/`, `/about`, the dimension and indicator pages, and
+   `/api/health`. Check `/api/indicators?id=life-expectancy` for data, not
+   just an HTTP success response.
+4. If the Vercel project has a custom domain, add that same domain in the
+   Render service's **Settings > Custom Domains**, update DNS using Render's
+   displayed instructions, and wait for domain verification and HTTPS.
+5. Verify the public domain serves the Render deployment before retiring
+   the Vercel deployment. A `vercel.app` address cannot move to Render;
+   use the Render address or an owned custom domain instead.
 
-## Deploy on Vercel
+No application API keys, database, or persistent disk are required by the
+current code. The 24-hour indicator cache is per process and resets on
+restart, sleep, or redeploy. The next request refetches data; upstream
+availability still determines which indicators are populated.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+`/api/health` checks the application server without contacting upstream
+providers, so a provider outage does not trigger repeated service restarts.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+References: [Render Next.js deployment](https://render.com/docs/deploy-nextjs-app),
+[Render custom domains](https://render.com/docs/custom-domains), and
+[Render free services](https://render.com/docs/free).
